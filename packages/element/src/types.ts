@@ -97,6 +97,13 @@ export type ExcalidrawEllipseElement = _ExcalidrawElementBase & {
   type: "ellipse";
 };
 
+export type ExcalidrawTableElement = _ExcalidrawElementBase & {
+  type: "table";
+  rows: number;
+  columns: number;
+  cellTexts?: Map<string, { text: string; fontFamily?: FontFamilyValues; fontSize?: number }>;
+};
+
 export type ExcalidrawEmbeddableElement = _ExcalidrawElementBase &
   Readonly<{
     type: "embeddable";
@@ -181,7 +188,8 @@ export type ExcalidrawGenericElement =
   | ExcalidrawSelectionElement
   | ExcalidrawRectangleElement
   | ExcalidrawDiamondElement
-  | ExcalidrawEllipseElement;
+  | ExcalidrawEllipseElement
+  | ExcalidrawTableElement;
 
 export type ExcalidrawFlowchartNodeElement =
   | ExcalidrawRectangleElement
@@ -196,7 +204,8 @@ export type ExcalidrawRectanguloidElement =
   | ExcalidrawIframeLikeElement
   | ExcalidrawFrameLikeElement
   | ExcalidrawEmbeddableElement
-  | ExcalidrawSelectionElement;
+  | ExcalidrawSelectionElement
+  | ExcalidrawTableElement;
 
 /**
  * ExcalidrawElement should be JSON serializable and (eventually) contain
@@ -213,7 +222,8 @@ export type ExcalidrawElement =
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
   | ExcalidrawIframeElement
-  | ExcalidrawEmbeddableElement;
+  | ExcalidrawEmbeddableElement
+  | ExcalidrawTableElement;
 
 export type ExcalidrawNonSelectionElement = Exclude<
   ExcalidrawElement,
@@ -265,7 +275,8 @@ export type ExcalidrawBindableElement =
   | ExcalidrawIframeElement
   | ExcalidrawEmbeddableElement
   | ExcalidrawFrameElement
-  | ExcalidrawMagicFrameElement;
+  | ExcalidrawMagicFrameElement
+  | ExcalidrawTableElement;
 
 export type ExcalidrawTextContainer =
   | ExcalidrawRectangleElement

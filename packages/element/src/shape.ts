@@ -214,7 +214,8 @@ export const generateRoughOptions = (
     case "iframe":
     case "embeddable":
     case "diamond":
-    case "ellipse": {
+    case "ellipse":
+    case "table": {
       options.fillStyle = element.fillStyle;
       options.fill = isTransparent(element.backgroundColor)
         ? undefined
@@ -618,7 +619,8 @@ const generateElementShape = (
   switch (element.type) {
     case "rectangle":
     case "iframe":
-    case "embeddable": {
+    case "embeddable":
+    case "table": {
       let shape: ElementShapes[typeof element.type];
       // this is for rendering the stroke/bg of the embeddable, especially
       // when the src url is not set
@@ -658,6 +660,45 @@ const generateElementShape = (
           ),
         );
       }
+      
+      // For tables, draw the grid lines on top of the rectangle
+      if (element.type === "table") {
+        const tableElement = element as any; // Type assertion for table element
+        const drawables: Drawable[] = [shape];
+        
+        // Draw horizontal lines
+        const rowHeight = element.height / tableElement.rows;
+        for (let i = 1; i < tableElement.rows; i++) {
+          const y = i * rowHeight;
+          drawables.push(
+            generator.line(
+              0,
+              y,
+              element.width,
+              y,
+              generateRoughOptions(element, true),
+            ),
+          );
+        }
+        
+        // Draw vertical lines
+        const colWidth = element.width / tableElement.columns;
+        for (let i = 1; i < tableElement.columns; i++) {
+          const x = i * colWidth;
+          drawables.push(
+            generator.line(
+              x,
+              0,
+              x,
+              element.height,
+              generateRoughOptions(element, true),
+            ),
+          );
+        }
+        
+        return drawables;
+      }
+      
       return shape;
     }
     case "diamond": {
@@ -922,6 +963,7 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
     case "iframe":
     case "text":
     case "selection":
+    case "table":
       return getPolygonShape(element);
     case "arrow":
     case "line": {

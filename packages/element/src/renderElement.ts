@@ -411,10 +411,16 @@ const drawElementOnCanvas = (
     case "iframe":
     case "embeddable":
     case "diamond":
-    case "ellipse": {
+    case "ellipse":
+    case "table": {
       context.lineJoin = "round";
       context.lineCap = "round";
-      rc.draw(ShapeCache.get(element)!);
+      const shape = ShapeCache.get(element)!;
+      if (Array.isArray(shape)) {
+        shape.forEach((s) => rc.draw(s));
+      } else {
+        rc.draw(shape);
+      }
       break;
     }
     case "arrow":
@@ -827,7 +833,8 @@ export const renderElement = (
     case "image":
     case "text":
     case "iframe":
-    case "embeddable": {
+    case "embeddable":
+    case "table": {
       // TODO investigate if we can do this in situ. Right now we need to call
       // beforehand because math helpers (such as getElementAbsoluteCoords)
       // rely on existing shapes

@@ -48,6 +48,7 @@ import type {
   ExcalidrawArrowElement,
   ExcalidrawElbowArrowElement,
   ExcalidrawLineElement,
+  ExcalidrawTableElement,
 } from "./types";
 
 export type ElementConstructorOpts = MarkOptional<
@@ -159,8 +160,15 @@ export const newElement = (
   opts: {
     type: ExcalidrawGenericElement["type"];
   } & ElementConstructorOpts,
-): NonDeleted<ExcalidrawGenericElement> =>
-  _newElementBase<ExcalidrawGenericElement>(opts.type, opts);
+): NonDeleted<ExcalidrawGenericElement> => {
+  if (opts.type === "table") {
+    return newTableElement({
+      ...opts,
+      type: "table",
+    }) as NonDeleted<ExcalidrawGenericElement>;
+  }
+  return _newElementBase<ExcalidrawGenericElement>(opts.type, opts);
+};
 
 export const newEmbeddableElement = (
   opts: {
@@ -545,5 +553,21 @@ export const newImageElement = (
     fileId: opts.fileId ?? null,
     scale: opts.scale ?? [1, 1],
     crop: opts.crop ?? null,
+  };
+};
+
+export const newTableElement = (
+  opts: {
+    type: "table";
+    rows?: number;
+    columns?: number;
+    cellTexts?: Map<string, { text: string; fontFamily?: FontFamilyValues; fontSize?: number }>;
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawTableElement> => {
+  return {
+    ..._newElementBase<ExcalidrawTableElement>("table", opts),
+    rows: opts.rows ?? 3,
+    columns: opts.columns ?? 3,
+    cellTexts: opts.cellTexts ?? new Map(),
   };
 };

@@ -32,6 +32,7 @@ import type {
   FixedPointBinding,
   ExcalidrawFlowchartNodeElement,
   ExcalidrawLinearElementSubType,
+  ExcalidrawTableElement,
 } from "./types";
 
 export const isInitializedImageElement = (
@@ -44,6 +45,12 @@ export const isImageElement = (
   element: ExcalidrawElement | null,
 ): element is ExcalidrawImageElement => {
   return !!element && element.type === "image";
+};
+
+export const isTableElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawTableElement => {
+  return !!element && element.type === "table";
 };
 
 export const isEmbeddableElement = (
@@ -202,6 +209,7 @@ export const isRectanguloidElement = (
   return (
     element != null &&
     (element.type === "rectangle" ||
+      element.type === "table" ||
       element.type === "diamond" ||
       element.type === "image" ||
       element.type === "iframe" ||
@@ -220,6 +228,7 @@ export const isRectangularElement = (
   return (
     element != null &&
     (element.type === "rectangle" ||
+      element.type === "table" ||
       element.type === "image" ||
       element.type === "text" ||
       element.type === "iframe" ||
@@ -312,7 +321,8 @@ export const isUsingAdaptiveRadius = (type: string) =>
   type === "rectangle" ||
   type === "embeddable" ||
   type === "iframe" ||
-  type === "image";
+  type === "image" ||
+  type === "table";
 
 export const isUsingProportionalRadius = (type: string) =>
   type === "line" || type === "arrow" || type === "diamond";
