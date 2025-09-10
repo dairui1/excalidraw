@@ -49,6 +49,8 @@ export const distanceToElement = (
     case "arrow":
     case "freedraw":
       return distanceToLinearOrFreeDraElement(element, p);
+    case "table":
+      return distanceToRectanguloidElement(element, elementsMap, p);
   }
 };
 

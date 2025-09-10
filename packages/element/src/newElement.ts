@@ -48,6 +48,8 @@ import type {
   ExcalidrawArrowElement,
   ExcalidrawElbowArrowElement,
   ExcalidrawLineElement,
+  ExcalidrawTableElement,
+  TableCellData,
 } from "./types";
 
 export type ElementConstructorOpts = MarkOptional<
@@ -545,5 +547,40 @@ export const newImageElement = (
     fileId: opts.fileId ?? null,
     scale: opts.scale ?? [1, 1],
     crop: opts.crop ?? null,
+  };
+};
+
+export const newTableElement = (
+  opts: {
+    rows: number;
+    cols: number;
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawTableElement> => {
+  const { rows, cols, ...rest } = opts;
+  
+  // Validate dimensions
+  const validatedRows = Math.max(1, Math.min(rows, 50));
+  const validatedCols = Math.max(1, Math.min(cols, 50));
+  
+  // Initialize cell data
+  const cellData: TableCellData[][] = [];
+  for (let i = 0; i < validatedRows; i++) {
+    cellData[i] = [];
+    for (let j = 0; j < validatedCols; j++) {
+      cellData[i][j] = { text: "" };
+    }
+  }
+  
+  // Initialize column widths and row heights
+  const colWidths = new Array(validatedCols).fill(100);
+  const rowHeights = new Array(validatedRows).fill(40);
+  
+  return {
+    ..._newElementBase<ExcalidrawTableElement>("table", rest),
+    rows: validatedRows,
+    cols: validatedCols,
+    cellData,
+    colWidths,
+    rowHeights,
   };
 };

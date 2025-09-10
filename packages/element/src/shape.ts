@@ -829,6 +829,25 @@ const generateElementShape = (
       // `element.canvas` on rerenders
       return shape;
     }
+    case "table": {
+      let shape: ElementShapes[typeof element.type];
+      // For now, treat table as a rectangle for shape generation
+      if (element.roundness) {
+        const w = element.width;
+        const h = element.height;
+        const r = getCornerRadius(Math.min(w, h), element);
+        shape = generator.rectangle(0, 0, w, h, {
+          ...generateRoughOptions(element),
+          fillStyle: "solid",
+        });
+      } else {
+        shape = generator.rectangle(0, 0, element.width, element.height, {
+          ...generateRoughOptions(element),
+          fillStyle: "solid",
+        });
+      }
+      return shape;
+    }
     default: {
       assertNever(
         element,
@@ -922,6 +941,7 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
     case "iframe":
     case "text":
     case "selection":
+    case "table":
       return getPolygonShape(element);
     case "arrow":
     case "line": {

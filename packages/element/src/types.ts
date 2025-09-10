@@ -102,6 +102,23 @@ export type ExcalidrawEmbeddableElement = _ExcalidrawElementBase &
     type: "embeddable";
   }>;
 
+export type TableCellData = {
+  text: string;
+  backgroundColor?: string;
+  colspan?: number;
+  rowspan?: number;
+};
+
+export type ExcalidrawTableElement = _ExcalidrawElementBase &
+  Readonly<{
+    type: "table";
+    rows: number;
+    cols: number;
+    cellData: TableCellData[][];
+    colWidths: number[];
+    rowHeights: number[];
+  }>;
+
 export type MagicGenerationData =
   | {
       status: "pending";
@@ -196,6 +213,7 @@ export type ExcalidrawRectanguloidElement =
   | ExcalidrawIframeLikeElement
   | ExcalidrawFrameLikeElement
   | ExcalidrawEmbeddableElement
+  | ExcalidrawTableElement
   | ExcalidrawSelectionElement;
 
 /**
@@ -213,7 +231,8 @@ export type ExcalidrawElement =
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
   | ExcalidrawIframeElement
-  | ExcalidrawEmbeddableElement;
+  | ExcalidrawEmbeddableElement
+  | ExcalidrawTableElement;
 
 export type ExcalidrawNonSelectionElement = Exclude<
   ExcalidrawElement,

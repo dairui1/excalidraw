@@ -25,6 +25,7 @@ import {
   newLinearElement,
   newMagicFrameElement,
   newTextElement,
+  newTableElement,
 } from "@excalidraw/element";
 import { measureText, normalizeText } from "@excalidraw/element";
 import { isArrowElement } from "@excalidraw/element";
@@ -54,6 +55,7 @@ import type {
   ExcalidrawMagicFrameElement,
   ExcalidrawSelectionElement,
   ExcalidrawTextElement,
+  ExcalidrawTableElement,
   FileId,
   FontFamilyValues,
   NonDeletedSceneElementsMap,
@@ -207,7 +209,14 @@ export type ExcalidrawElementSkeleton =
       type: "magicframe";
       children: readonly ExcalidrawElement["id"][];
       name?: string;
-    } & Partial<ExcalidrawMagicFrameElement>);
+    } & Partial<ExcalidrawMagicFrameElement>)
+  | ({
+      type: "table";
+      x: number;
+      y: number;
+      rows?: number;
+      cols?: number;
+    } & Partial<ExcalidrawTableElement>);
 
 const DEFAULT_LINEAR_ELEMENT_PROPS = {
   width: 100,
@@ -618,6 +627,15 @@ export const convertToExcalidrawElements = (
           x: 0,
           y: 0,
           ...element,
+        });
+        break;
+      }
+      case "table": {
+        const tableElement = element as any;
+        excalidrawElement = newTableElement({
+          ...tableElement,
+          rows: tableElement.rows || 3,
+          cols: tableElement.cols || 3,
         });
         break;
       }

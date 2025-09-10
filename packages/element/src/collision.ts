@@ -258,6 +258,14 @@ export const intersectElementWithLineSegment = (
     case "freedraw":
     case "arrow":
       return intersectLinearOrFreeDrawWithLineSegment(element, line, onlyFirst);
+    case "table":
+      return intersectRectanguloidWithLineSegment(
+        element,
+        elementsMap,
+        line,
+        offset,
+        onlyFirst,
+      );
   }
 };
 

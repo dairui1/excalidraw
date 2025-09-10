@@ -288,6 +288,7 @@
     "image": "Insert image",
     "rectangle": "Rectangle",
     "diamond": "Diamond",
+    "table": "Table",
     "ellipse": "Ellipse",
     "arrow": "Arrow",
     "line": "Line",
@@ -321,7 +322,8 @@
     "magicframe": "Wireframe to code",
     "embeddable": "Web Embed",
     "selection": "Selection",
-    "iframe": "IFrame"
+    "iframe": "IFrame",
+    "table": "Table"
   },
   "headings": {
     "canvasActions": "Canvas actions",

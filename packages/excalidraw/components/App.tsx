@@ -122,6 +122,7 @@ import {
   newEmbeddableElement,
   newMagicFrameElement,
   newIframeElement,
+  newTableElement,
   newArrowElement,
   newElement,
   newImageElement,
@@ -7860,7 +7861,8 @@ class App extends React.Component<AppProps, AppState> {
       | "diamond"
       | "ellipse"
       | "iframe"
-      | "embeddable",
+      | "embeddable"
+      | "table",
   ) {
     return this.state.currentItemRoundness === "round"
       ? {
@@ -7872,7 +7874,7 @@ class App extends React.Component<AppProps, AppState> {
   }
 
   private createGenericElementOnPointerDown = (
-    elementType: ExcalidrawGenericElement["type"] | "embeddable",
+    elementType: ExcalidrawGenericElement["type"] | "embeddable" | "table",
     pointerDownState: PointerDownState,
   ): void => {
     const [gridX, gridY] = getGridPoint(
@@ -7907,6 +7909,12 @@ class App extends React.Component<AppProps, AppState> {
     if (elementType === "embeddable") {
       element = newEmbeddableElement({
         type: "embeddable",
+        ...baseElementAttributes,
+      });
+    } else if (elementType === "table") {
+      element = newTableElement({
+        rows: 3,
+        cols: 3,
         ...baseElementAttributes,
       });
     } else {
