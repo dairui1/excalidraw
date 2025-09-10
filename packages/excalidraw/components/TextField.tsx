@@ -28,7 +28,11 @@ type TextFieldProps = {
   className?: string;
   placeholder?: string;
   isRedacted?: boolean;
-} & ({ value: string } | { defaultValue: string });
+} & ({ value: string } | { defaultValue: string }) &
+  Omit<
+    React.InputHTMLAttributes<HTMLInputElement>,
+    "onChange" | "onKeyDown" | "value" | "defaultValue" | "readOnly"
+  >;
 
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
   (
@@ -43,7 +47,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       isRedacted = false,
       icon,
       className,
-      ...rest
+      ...inputProps
     },
     ref,
   ) => {
@@ -82,20 +86,20 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
           <input
             className={clsx({
               "is-redacted":
-                "value" in rest &&
-                rest.value &&
+                "value" in inputProps &&
+                inputProps.value &&
                 isRedacted &&
                 !isTemporarilyUnredacted,
             })}
             readOnly={readonly}
-            value={"value" in rest ? rest.value : undefined}
-            defaultValue={
-              "defaultValue" in rest ? rest.defaultValue : undefined
-            }
             placeholder={placeholder}
             ref={innerRef}
             onChange={(event) => onChange?.(event.target.value)}
             onKeyDown={onKeyDown}
+            {...("value" in inputProps
+              ? { value: inputProps.value }
+              : { defaultValue: inputProps.defaultValue })}
+            {...inputProps}
           />
           {isRedacted && (
             <Button

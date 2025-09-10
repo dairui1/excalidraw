@@ -690,6 +690,26 @@ export const resizeSingleElement = (
     );
   }
 
+  // Handle table element resizing with proportional cell size adjustment
+  if (latestElement.type === "table" && origElement.type === "table") {
+    const widthRatio = nextWidth / origElement.width;
+    const heightRatio = nextHeight / origElement.height;
+
+    // Proportionally adjust cell sizes
+    const newCellSizes = {
+      columnWidths: origElement.cellSizes.columnWidths.map(
+        (width) => width * widthRatio,
+      ),
+      rowHeights: origElement.cellSizes.rowHeights.map(
+        (height) => height * heightRatio,
+      ),
+    };
+
+    scene.mutateElement(latestElement, {
+      cellSizes: newCellSizes,
+    } as any);
+  }
+
   let boundTextFont: { fontSize?: number } = {};
   const elementsMap = scene.getNonDeletedElementsMap();
   const boundTextElement = getBoundTextElement(latestElement, elementsMap);

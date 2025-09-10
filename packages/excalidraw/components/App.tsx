@@ -73,6 +73,7 @@ import {
   debounce,
   distance,
   getFontString,
+  getFontFamilyString,
   getNearestScrollableContainer,
   isInputLike,
   isToolIcon,
@@ -127,6 +128,7 @@ import {
   newImageElement,
   newLinearElement,
   newTextElement,
+  newTableElement,
   refreshTextDimensions,
   deepCopyElement,
   duplicateElements,
@@ -5560,6 +5562,19 @@ class App extends React.Component<AppProps, AppState> {
       // shouldn't edit/create text when inside line editor (often false positive)
 
       if (!this.state.selectedLinearElement?.isEditing) {
+        // Check for table cell editing first
+        const tableCell = this.getTableCellAtPosition(sceneX, sceneY);
+        if (tableCell) {
+          this.startTableCellTextEditing({
+            table: tableCell.table,
+            row: tableCell.row,
+            col: tableCell.col,
+            sceneX: tableCell.x,
+            sceneY: tableCell.y,
+          });
+          return;
+        }
+
         const container = this.getTextBindableContainerAtPosition(
           sceneX,
           sceneY,
@@ -6619,10 +6634,28 @@ class App extends React.Component<AppProps, AppState> {
       this.state.activeTool.type !== "hand" &&
       this.state.activeTool.type !== "image"
     ) {
-      this.createGenericElementOnPointerDown(
-        this.state.activeTool.type,
-        pointerDownState,
-      );
+      if (this.state.activeTool.type === "table") {
+        // Show table dimension dialog instead of creating element directly
+        const [gridX, gridY] = getGridPoint(
+          pointerDownState.origin.x,
+          pointerDownState.origin.y,
+          this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
+            ? null
+            : this.getEffectiveGridSize(),
+        );
+
+        this.setState({
+          openDialog: {
+            name: "tableDimensions",
+            position: { x: gridX, y: gridY },
+          },
+        });
+      } else {
+        this.createGenericElementOnPointerDown(
+          this.state.activeTool.type,
+          pointerDownState,
+        );
+      }
     }
 
     this.props?.onPointerDown?.(this.state.activeTool, pointerDownState);
@@ -7860,7 +7893,8 @@ class App extends React.Component<AppProps, AppState> {
       | "diamond"
       | "ellipse"
       | "iframe"
-      | "embeddable",
+      | "embeddable"
+      | "table",
   ) {
     return this.state.currentItemRoundness === "round"
       ? {
@@ -7927,6 +7961,260 @@ class App extends React.Component<AppProps, AppState> {
         newElement: element,
       });
     }
+  };
+
+  public createTableElement = (
+    position: { x: number; y: number },
+    rows: number,
+    columns: number,
+  ): void => {
+    const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
+      x: position.x,
+      y: position.y,
+    });
+
+    const tableElement = newTableElement({
+      x: position.x,
+      y: position.y,
+      strokeColor: this.state.currentItemStrokeColor,
+      backgroundColor: this.state.currentItemBackgroundColor,
+      fillStyle: this.state.currentItemFillStyle,
+      strokeWidth: this.state.currentItemStrokeWidth,
+      strokeStyle: this.state.currentItemStrokeStyle,
+      roughness: this.state.currentItemRoughness,
+      opacity: this.state.currentItemOpacity,
+      roundness: this.getCurrentItemRoundness("table"),
+      locked: false,
+      frameId: topLayerFrame ? topLayerFrame.id : null,
+      rows,
+      columns,
+    });
+
+    this.scene.insertElement(tableElement);
+    this.setState({
+      multiElement: null,
+      newElement: tableElement,
+      selectedElementIds: { [tableElement.id]: true },
+    });
+  };
+
+  private getTableCellAtPosition = (
+    x: number,
+    y: number,
+  ): {
+    table: ExcalidrawElement;
+    row: number;
+    col: number;
+    x: number;
+    y: number;
+  } | null => {
+    const hitElement = this.getElementAtPosition(x, y);
+    if (!hitElement || hitElement.type !== "table") {
+      return null;
+    }
+
+    const table = hitElement;
+    const localX = x - table.x;
+    const localY = y - table.y;
+
+    // Find which cell was clicked
+    let currentX = 0;
+    let col = 0;
+    for (let i = 0; i < table.columns; i++) {
+      if (
+        localX >= currentX &&
+        localX <= currentX + table.cellSizes.columnWidths[i]
+      ) {
+        col = i;
+        break;
+      }
+      currentX += table.cellSizes.columnWidths[i];
+    }
+
+    let currentY = 0;
+    let row = 0;
+    for (let i = 0; i < table.rows; i++) {
+      if (
+        localY >= currentY &&
+        localY <= currentY + table.cellSizes.rowHeights[i]
+      ) {
+        row = i;
+        break;
+      }
+      currentY += table.cellSizes.rowHeights[i];
+    }
+
+    // Calculate cell center position for text editing
+    const cellX = table.x + currentX + table.cellSizes.columnWidths[col] / 2;
+    const cellY = table.y + currentY + table.cellSizes.rowHeights[row] / 2;
+
+    return { table, row, col, x: cellX, y: cellY };
+  };
+
+  private startTableCellTextEditing = ({
+    table,
+    row,
+    col,
+    sceneX,
+    sceneY,
+  }: {
+    table: ExcalidrawElement;
+    row: number;
+    col: number;
+    sceneX: number;
+    sceneY: number;
+  }): void => {
+    const cellKey = `${row}-${col}`;
+    const tableData = table as any;
+    const existingText = tableData.cellData?.[cellKey] || "";
+
+    // Calculate cell bounds for text editing
+    const currentX = tableData.cellSizes.columnWidths
+      .slice(0, col)
+      .reduce((sum: number, width: number) => sum + width, 0);
+    const currentY = tableData.cellSizes.rowHeights
+      .slice(0, row)
+      .reduce((sum: number, height: number) => sum + height, 0);
+    const cellWidth = tableData.cellSizes.columnWidths[col];
+    const cellHeight = tableData.cellSizes.rowHeights[row];
+
+    // Create a textarea for cell editing
+    const textarea = document.createElement("textarea");
+    textarea.value = existingText;
+    textarea.className = "excalidraw-table-cell-editor";
+    textarea.style.position = "absolute";
+    textarea.style.border = "1px solid #339af0";
+    textarea.style.backgroundColor = "white";
+    textarea.style.color = "black";
+    textarea.style.padding = "4px";
+    textarea.style.resize = "none";
+    textarea.style.zIndex = "var(--zIndex-wysiwyg)";
+    textarea.style.outline = "none";
+    textarea.style.textAlign = "center";
+    textarea.style.overflow = "hidden";
+
+    // Update position and style based on current app state
+    const updateTextareaPosition = () => {
+      // Convert scene coordinates to viewport coordinates
+      const { x: viewportX, y: viewportY } = sceneCoordsToViewportCoords(
+        { sceneX: table.x + currentX, sceneY: table.y + currentY },
+        this.state,
+      );
+
+      textarea.style.left = `${viewportX - this.state.offsetLeft + 4}px`;
+      textarea.style.top = `${viewportY - this.state.offsetTop + 4}px`;
+      textarea.style.width = `${(cellWidth - 8) * this.state.zoom.value}px`;
+      textarea.style.height = `${(cellHeight - 8) * this.state.zoom.value}px`;
+      textarea.style.fontSize = `${14 * this.state.zoom.value}px`;
+      textarea.style.fontFamily = getFontFamilyString({ fontFamily: 1 });
+    };
+
+    // Initial position update
+    updateTextareaPosition();
+
+    // Add to the editor container
+    const editorContainer = this.excalidrawContainerRef?.current?.querySelector(
+      ".excalidraw-textEditorContainer",
+    );
+    if (editorContainer) {
+      editorContainer.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+    }
+
+    // Handle text changes
+    const handleTextChange = () => {
+      this.scene.mutateElement(table, {
+        cellData: {
+          ...tableData.cellData,
+          [cellKey]: textarea.value,
+        },
+      } as any);
+      this.setState({});
+    };
+
+    // Handle completion
+    let finishEditing = () => {
+      handleTextChange();
+      textarea.removeEventListener("input", handleTextChange);
+      textarea.removeEventListener("blur", finishEditing);
+      textarea.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", updateTextareaPosition);
+      if (observer) {
+        observer.disconnect();
+      }
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      textarea.remove();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        finishEditing();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        textarea.value = existingText; // Revert to original text
+        finishEditing();
+      }
+    };
+
+    // Set up resize observer for canvas changes
+    let observer: ResizeObserver | null = null;
+    if (window.ResizeObserver) {
+      observer = new window.ResizeObserver(() => {
+        updateTextareaPosition();
+      });
+      const canvas = this.canvas;
+      if (canvas) {
+        observer.observe(canvas);
+      }
+    }
+
+    // Use requestAnimationFrame to continuously update position while editing
+    let animationFrameId: number | null = null;
+    let previousZoom = this.state.zoom.value;
+    let previousOffsetLeft = this.state.offsetLeft;
+    let previousOffsetTop = this.state.offsetTop;
+
+    const checkForUpdates = () => {
+      const currentZoom = this.state.zoom.value;
+      const currentOffsetLeft = this.state.offsetLeft;
+      const currentOffsetTop = this.state.offsetTop;
+
+      // Check if zoom or scroll has changed
+      if (
+        currentZoom !== previousZoom ||
+        currentOffsetLeft !== previousOffsetLeft ||
+        currentOffsetTop !== previousOffsetTop
+      ) {
+        updateTextareaPosition();
+        previousZoom = currentZoom;
+        previousOffsetLeft = currentOffsetLeft;
+        previousOffsetTop = currentOffsetTop;
+      }
+
+      animationFrameId = requestAnimationFrame(checkForUpdates);
+    };
+
+    // Start the update loop
+    animationFrameId = requestAnimationFrame(checkForUpdates);
+
+    // Add event listeners
+    textarea.addEventListener("input", handleTextChange);
+    textarea.addEventListener("blur", finishEditing);
+    textarea.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", updateTextareaPosition);
+
+    // Clean up on unmount
+    const originalFinishEditing = finishEditing;
+    finishEditing = () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      originalFinishEditing();
+    };
   };
 
   private createFrameElementOnPointerDown = (

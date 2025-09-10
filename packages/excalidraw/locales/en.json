@@ -151,6 +151,11 @@
       "lockAll": "Lock all",
       "unlockAll": "Unlock all"
     },
+    "tableDialog": {
+      "createTable": "Create Table",
+      "rows": "Rows",
+      "columns": "Columns"
+    },
     "statusPublished": "Published",
     "sidebarLock": "Keep sidebar open",
     "selectAllElementsInFrame": "Select all elements in frame",
@@ -194,6 +199,7 @@
   },
   "buttons": {
     "clearReset": "Reset the canvas",
+    "create": "Create",
     "exportJSON": "Export to file",
     "exportImage": "Export image...",
     "export": "Save to...",
@@ -302,6 +308,7 @@
     "magicframe": "Wireframe to code",
     "embeddable": "Web Embed",
     "laser": "Laser pointer",
+    "table": "Table",
     "hand": "Hand (panning tool)",
     "extraTools": "More tools",
     "mermaidToExcalidraw": "Mermaid to Excalidraw",
@@ -321,7 +328,8 @@
     "magicframe": "Wireframe to code",
     "embeddable": "Web Embed",
     "selection": "Selection",
-    "iframe": "IFrame"
+    "iframe": "IFrame",
+    "table": "Table"
   },
   "headings": {
     "canvasActions": "Canvas actions",

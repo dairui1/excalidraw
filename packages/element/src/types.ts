@@ -165,6 +165,24 @@ export type ExcalidrawFrameElement = _ExcalidrawElementBase & {
   name: string | null;
 };
 
+export type ExcalidrawTableElement = _ExcalidrawElementBase & {
+  type: "table";
+  rows: number;
+  columns: number;
+  /** Cell text data stored as "row-col" -> text mapping */
+  cellData: Record<string, string>;
+  /** Row heights and column widths */
+  cellSizes: {
+    rowHeights: number[];
+    columnWidths: number[];
+  };
+  /** Currently selected cell for editing */
+  selectedCell: { row: number; col: number } | null;
+  /** Default cell dimensions */
+  defaultCellWidth: number;
+  defaultCellHeight: number;
+};
+
 export type ExcalidrawMagicFrameElement = _ExcalidrawElementBase & {
   type: "magicframe";
   name: string | null;
@@ -196,7 +214,8 @@ export type ExcalidrawRectanguloidElement =
   | ExcalidrawIframeLikeElement
   | ExcalidrawFrameLikeElement
   | ExcalidrawEmbeddableElement
-  | ExcalidrawSelectionElement;
+  | ExcalidrawSelectionElement
+  | ExcalidrawTableElement;
 
 /**
  * ExcalidrawElement should be JSON serializable and (eventually) contain
@@ -213,7 +232,8 @@ export type ExcalidrawElement =
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
   | ExcalidrawIframeElement
-  | ExcalidrawEmbeddableElement;
+  | ExcalidrawEmbeddableElement
+  | ExcalidrawTableElement;
 
 export type ExcalidrawNonSelectionElement = Exclude<
   ExcalidrawElement,

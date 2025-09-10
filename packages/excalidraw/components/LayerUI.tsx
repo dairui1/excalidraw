@@ -48,6 +48,7 @@ import { DefaultSidebar } from "./DefaultSidebar";
 import { TTDDialog } from "./TTDDialog/TTDDialog";
 import { Stats } from "./Stats";
 import ElementLinkDialog from "./ElementLinkDialog";
+import { TableDimensionDialog } from "./TableDimensionDialog";
 import { ErrorDialog } from "./ErrorDialog";
 import { EyeDropper, activeEyeDropperAtom } from "./EyeDropper";
 import { FixedSideContainer } from "./FixedSideContainer";
@@ -493,6 +494,19 @@ const LayerUI = ({
           scene={app.scene}
           appState={appState}
           generateLinkForSelection={generateLinkForSelection}
+        />
+      )}
+      {appState.openDialog?.name === "tableDimensions" && (
+        <TableDimensionDialog
+          onTableCreate={(rows, columns) => {
+            if (appState.openDialog?.name === "tableDimensions") {
+              app.createTableElement(
+                appState.openDialog.position,
+                rows,
+                columns,
+              );
+            }
+          }}
         />
       )}
       <tunnels.OverwriteConfirmDialogTunnel.Out />

@@ -24,6 +24,7 @@ import {
   newImageElement,
   newLinearElement,
   newMagicFrameElement,
+  newTableElement,
   newTextElement,
 } from "@excalidraw/element";
 import { measureText, normalizeText } from "@excalidraw/element";
@@ -53,6 +54,7 @@ import type {
   ExcalidrawLinearElement,
   ExcalidrawMagicFrameElement,
   ExcalidrawSelectionElement,
+  ExcalidrawTableElement,
   ExcalidrawTextElement,
   FileId,
   FontFamilyValues,
@@ -207,7 +209,20 @@ export type ExcalidrawElementSkeleton =
       type: "magicframe";
       children: readonly ExcalidrawElement["id"][];
       name?: string;
-    } & Partial<ExcalidrawMagicFrameElement>);
+    } & Partial<ExcalidrawMagicFrameElement>)
+  | ({
+      type: "table";
+      rows?: number;
+      columns?: number;
+      cellData?: Record<string, string>;
+      cellSizes?: {
+        rowHeights: number[];
+        columnWidths: number[];
+      };
+      selectedCell?: { row: number; col: number } | null;
+      defaultCellWidth?: number;
+      defaultCellHeight?: number;
+    } & Partial<ExcalidrawTableElement>);
 
 const DEFAULT_LINEAR_ELEMENT_PROPS = {
   width: 100,
@@ -621,6 +636,58 @@ export const convertToExcalidrawElements = (
         });
         break;
       }
+      case "table": {
+        const rows = element.rows || 3;
+        const columns = element.columns || 3;
+        const defaultCellWidth = element.defaultCellWidth || 100;
+        const defaultCellHeight = element.defaultCellHeight || 30;
+
+        // Initialize cell sizes with default dimensions
+        const cellSizes = element.cellSizes || {
+          rowHeights: Array(rows).fill(defaultCellHeight),
+          columnWidths: Array(columns).fill(defaultCellWidth),
+        };
+
+        // Calculate total dimensions
+        const totalWidth =
+          element.width ||
+          cellSizes.columnWidths.reduce((sum, width) => sum + width, 0);
+        const totalHeight =
+          element.height ||
+          cellSizes.rowHeights.reduce((sum, height) => sum + height, 0);
+
+        excalidrawElement = newTableElement({
+          x: element.x || 0,
+          y: element.y || 0,
+          width: totalWidth,
+          height: totalHeight,
+          rows,
+          columns,
+          cellData: element.cellData || {},
+          cellSizes,
+          defaultCellWidth,
+          defaultCellHeight,
+          // Copy other properties from element, excluding ones we're explicitly setting
+          ...Object.fromEntries(
+            Object.entries(element).filter(
+              ([key]) =>
+                ![
+                  "x",
+                  "y",
+                  "width",
+                  "height",
+                  "rows",
+                  "columns",
+                  "cellData",
+                  "cellSizes",
+                  "defaultCellWidth",
+                  "defaultCellHeight",
+                ].includes(key),
+            ),
+          ),
+        });
+        break;
+      }
       case "freedraw":
       case "iframe":
       case "embeddable": {
@@ -658,6 +725,14 @@ export const convertToExcalidrawElements = (
     const excalidrawElement = elementStore.getElement(id)!;
 
     switch (element.type) {
+      case "table": {
+        // Handle table cell data serialization
+        if (element.cellData && Object.keys(element.cellData).length > 0) {
+          // Table cell data is already stored in the element, no additional processing needed
+          // The cellData will be preserved through the newTableElement constructor
+        }
+        break;
+      }
       case "rectangle":
       case "ellipse":
       case "diamond":

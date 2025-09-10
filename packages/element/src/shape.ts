@@ -214,7 +214,8 @@ export const generateRoughOptions = (
     case "iframe":
     case "embeddable":
     case "diamond":
-    case "ellipse": {
+    case "ellipse":
+    case "table": {
       options.fillStyle = element.fillStyle;
       options.fill = isTransparent(element.backgroundColor)
         ? undefined
@@ -829,6 +830,33 @@ const generateElementShape = (
       // `element.canvas` on rerenders
       return shape;
     }
+    case "table": {
+      // Generate rough.js shape for table to match rectangle style
+      let shape: Drawable;
+
+      if (element.roundness) {
+        const w = element.width;
+        const h = element.height;
+        const r = getCornerRadius(Math.min(w, h), element);
+        shape = generator.path(
+          `M ${r} 0 L ${w - r} 0 Q ${w} 0, ${w} ${r} L ${w} ${
+            h - r
+          } Q ${w} ${h}, ${w - r} ${h} L ${r} ${h} Q 0 ${h}, 0 ${
+            h - r
+          } L 0 ${r} Q 0 0, ${r} 0`,
+          generateRoughOptions(element, true),
+        );
+      } else {
+        shape = generator.rectangle(
+          0,
+          0,
+          element.width,
+          element.height,
+          generateRoughOptions(element, false),
+        );
+      }
+      return shape;
+    }
     default: {
       assertNever(
         element,
@@ -957,6 +985,9 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
         shouldTestInside(element),
       );
     }
+    case "table":
+      // Tables are rectangular, use polygon shape
+      return getPolygonShape(element);
   }
 };
 

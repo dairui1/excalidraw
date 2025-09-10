@@ -14,6 +14,7 @@ import {
   getFontString,
   isRTL,
   getVerticalOffset,
+  getLineHeight,
 } from "@excalidraw/common";
 
 import type {
@@ -57,6 +58,8 @@ import { getContainingFrame } from "./frame";
 import { getCornerRadius } from "./utils";
 
 import { ShapeCache } from "./shape";
+
+import type { ExcalidrawTableElement } from "./types";
 
 import type {
   ExcalidrawElement,
@@ -487,6 +490,10 @@ const drawElementOnCanvas = (
       }
       break;
     }
+    case "table": {
+      drawTableElement(element, context, renderConfig, appState, rc);
+      break;
+    }
     default: {
       if (isTextElement(element)) {
         const rtl = isRTL(element.text);
@@ -827,7 +834,8 @@ export const renderElement = (
     case "image":
     case "text":
     case "iframe":
-    case "embeddable": {
+    case "embeddable":
+    case "table": {
       // TODO investigate if we can do this in situ. Right now we need to call
       // beforehand because math helpers (such as getElementAbsoluteCoords)
       // rely on existing shapes
@@ -1091,3 +1099,151 @@ function getSvgPathFromStroke(points: number[][]): string {
     .join(" ")
     .replace(TO_FIXED_PRECISION, "$1");
 }
+
+const drawTableElement = (
+  element: ExcalidrawTableElement,
+  context: CanvasRenderingContext2D,
+  renderConfig: StaticCanvasRenderConfig,
+  appState: StaticCanvasAppState,
+  rc: RoughCanvas,
+) => {
+  context.save();
+  const shape = ShapeCache.get(element);
+
+  if (shape) {
+    // Draw the table border and background using rough.js
+    if (Array.isArray(shape)) {
+      shape.forEach((s) => rc.draw(s));
+    } else {
+      rc.draw(shape);
+    }
+  } else {
+    // Fallback to manual rendering if shape is not available
+    // Draw table background
+    if (element.backgroundColor !== "transparent") {
+      context.fillStyle = element.backgroundColor;
+      context.fillRect(0, 0, element.width, element.height);
+    }
+
+    // Draw table border
+    context.strokeStyle = element.strokeColor;
+    context.lineWidth = element.strokeWidth;
+    context.setLineDash(getLineDash(element.strokeStyle));
+
+    if (element.roundness && context.roundRect) {
+      context.beginPath();
+      context.roundRect(
+        0,
+        0,
+        element.width,
+        element.height,
+        getCornerRadius(Math.min(element.width, element.height), element),
+      );
+      context.stroke();
+    } else {
+      context.strokeRect(0, 0, element.width, element.height);
+    }
+  }
+
+  // Draw grid lines (using precise canvas drawing, not rough.js)
+  context.strokeStyle = element.strokeColor;
+  context.lineWidth = element.strokeWidth;
+  context.setLineDash(getLineDash(element.strokeStyle));
+
+  let currentY = 0;
+
+  // Draw horizontal lines (including borders)
+  for (let row = 0; row <= element.rows; row++) {
+    if (row < element.rows) {
+      currentY += element.cellSizes.rowHeights[row];
+    } else {
+      currentY = element.height;
+    }
+
+    context.beginPath();
+    context.moveTo(0, currentY);
+    context.lineTo(element.width, currentY);
+    context.stroke();
+  }
+
+  // Draw vertical lines (including borders)
+  let currentX = 0;
+  for (let col = 0; col <= element.columns; col++) {
+    if (col < element.columns) {
+      currentX += element.cellSizes.columnWidths[col];
+    } else {
+      currentX = element.width;
+    }
+
+    context.beginPath();
+    context.moveTo(currentX, 0);
+    context.lineTo(currentX, element.height);
+    context.stroke();
+  }
+
+  // Draw cell text
+  currentY = 0;
+  for (let row = 0; row < element.rows; row++) {
+    currentX = 0;
+    for (let col = 0; col < element.columns; col++) {
+      const cellKey = `${row}-${col}`;
+      const cellText = element.cellData[cellKey];
+
+      if (cellText) {
+        const cellWidth = element.cellSizes.columnWidths[col];
+        const cellHeight = element.cellSizes.rowHeights[row];
+
+        context.save();
+        context.fillStyle = element.strokeColor;
+        context.font = `${Math.min(cellHeight * 0.6, 14)}px sans-serif`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+
+        const textX = currentX + cellWidth / 2;
+        const textY = currentY + cellHeight / 2;
+
+        // Clip text to cell bounds
+        context.beginPath();
+        context.rect(currentX + 2, currentY + 2, cellWidth - 4, cellHeight - 4);
+        context.clip();
+
+        // Support multi-line text like text elements
+        const lines = cellText.replace(/\r\n?/g, "\n").split("\n");
+        const fontSize = Math.min(cellHeight * 0.6, 14);
+        const fontFamily = 1; // sans-serif
+        const lineHeight = getLineHeight(fontFamily);
+        const lineHeightPx = getLineHeightInPx(fontSize, lineHeight);
+        const verticalOffset = getVerticalOffset(fontFamily, fontSize, lineHeightPx);
+
+        // Calculate starting Y position to center the text block vertically
+        const totalTextHeight = lines.length * lineHeightPx;
+        const startY = textY - totalTextHeight / 2 + verticalOffset;
+
+        for (let index = 0; index < lines.length; index++) {
+          context.fillText(
+            lines[index],
+            textX,
+            startY + index * lineHeightPx,
+          );
+        }
+        context.restore();
+      }
+
+      currentX += element.cellSizes.columnWidths[col];
+    }
+    currentY += element.cellSizes.rowHeights[row];
+  }
+
+  context.restore();
+};
+
+const getLineDash = (strokeStyle: string): number[] => {
+  switch (strokeStyle) {
+    case "dashed":
+      return [10, 10];
+    case "dotted":
+      return [2, 2];
+    default:
+      return [];
+  }
+};

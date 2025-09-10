@@ -104,6 +104,7 @@ export const AllowedExcalidrawActiveTools: Record<
   hand: true,
   laser: false,
   magicframe: false,
+  table: true,
 };
 
 export type RestoredDataState = {
@@ -403,6 +404,23 @@ const restoreElement = (
     case "frame":
       return restoreElementWithProperties(element, {
         name: element.name ?? null,
+      });
+    case "table":
+      return restoreElementWithProperties(element, {
+        rows: element.rows ?? 3,
+        columns: element.columns ?? 3,
+        cellData: element.cellData ?? {},
+        cellSizes: element.cellSizes ?? {
+          rowHeights: Array(element.rows ?? 3).fill(
+            element.defaultCellHeight ?? 30,
+          ),
+          columnWidths: Array(element.columns ?? 3).fill(
+            element.defaultCellWidth ?? 100,
+          ),
+        },
+        selectedCell: element.selectedCell ?? null,
+        defaultCellWidth: element.defaultCellWidth ?? 100,
+        defaultCellHeight: element.defaultCellHeight ?? 30,
       });
 
     // Don't use default case so as to catch a missing an element type case.

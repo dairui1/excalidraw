@@ -343,6 +343,19 @@ export const EllipseIcon = createIcon(
   tablerIconProps,
 );
 
+// tabler-icons: table
+export const TableIcon = createIcon(
+  <g strokeWidth="1.5">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+    <line x1="4" y1="9" x2="20" y2="9"></line>
+    <line x1="4" y1="15" x2="20" y2="15"></line>
+    <line x1="9" y1="4" x2="9" y2="20"></line>
+    <line x1="15" y1="4" x2="15" y2="20"></line>
+  </g>,
+  tablerIconProps,
+);
+
 // tabler-icons: arrow-narrow-right
 export const ArrowIcon = createIcon(
   <g strokeWidth="1.5">

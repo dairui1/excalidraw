@@ -48,6 +48,7 @@ import type {
   ExcalidrawArrowElement,
   ExcalidrawElbowArrowElement,
   ExcalidrawLineElement,
+  ExcalidrawTableElement,
 } from "./types";
 
 export type ElementConstructorOpts = MarkOptional<
@@ -545,5 +546,56 @@ export const newImageElement = (
     fileId: opts.fileId ?? null,
     scale: opts.scale ?? [1, 1],
     crop: opts.crop ?? null,
+  };
+};
+
+export const newTableElement = (
+  opts: {
+    rows?: number;
+    columns?: number;
+    cellData?: Record<string, string>;
+    cellSizes?: {
+      rowHeights: number[];
+      columnWidths: number[];
+    };
+    defaultCellWidth?: number;
+    defaultCellHeight?: number;
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawTableElement> => {
+  const rows = opts.rows ?? 3;
+  const columns = opts.columns ?? 3;
+  const defaultCellWidth = opts.defaultCellWidth ?? 100;
+  const defaultCellHeight = opts.defaultCellHeight ?? 30;
+
+  // Initialize cell sizes with default dimensions
+  const cellSizes = opts.cellSizes ?? {
+    rowHeights: Array(rows).fill(defaultCellHeight),
+    columnWidths: Array(columns).fill(defaultCellWidth),
+  };
+
+  // Calculate total dimensions
+  const totalWidth = cellSizes.columnWidths.reduce(
+    (sum, width) => sum + width,
+    0,
+  );
+  const totalHeight = cellSizes.rowHeights.reduce(
+    (sum, height) => sum + height,
+    0,
+  );
+
+  return {
+    ..._newElementBase<ExcalidrawTableElement>("table", {
+      ...opts,
+      width: opts.width ?? totalWidth,
+      height: opts.height ?? totalHeight,
+    }),
+    type: "table",
+    rows,
+    columns,
+    cellData: opts.cellData ?? {},
+    cellSizes,
+    selectedCell: null,
+    defaultCellWidth,
+    defaultCellHeight,
   };
 };
