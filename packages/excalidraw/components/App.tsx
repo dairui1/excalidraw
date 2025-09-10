@@ -127,6 +127,7 @@ import {
   newImageElement,
   newLinearElement,
   newTextElement,
+  newTableElement,
   refreshTextDimensions,
   deepCopyElement,
   duplicateElements,
@@ -259,6 +260,7 @@ import type {
   MagicGenerationData,
   ExcalidrawArrowElement,
   ExcalidrawElbowArrowElement,
+  ExcalidrawNonSelectionElement,
 } from "@excalidraw/element/types";
 
 import type { Mutable, ValueOf } from "@excalidraw/common/utility-types";
@@ -408,6 +410,7 @@ import LayerUI from "./LayerUI";
 import { ElementCanvasButton } from "./MagicButton";
 import { SVGLayer } from "./SVGLayer";
 import { searchItemInFocusAtom } from "./SearchMenu";
+import TableConfigDialog from "./TableConfigDialog";
 import { isSidebarDockedAtom } from "./Sidebar/Sidebar";
 import { StaticCanvas, InteractiveCanvas } from "./canvases";
 import NewElementCanvas from "./canvases/NewElementCanvas";
@@ -1837,6 +1840,16 @@ class App extends React.Component<AppProps, AppState> {
             </ExcalidrawContainerContext.Provider>
           </AppPropsContext.Provider>
         </AppContext.Provider>
+        {this.state.openDialog?.name === "tableConfig" && (
+          <TableConfigDialog
+            onConfirm={(rows, columns) => {
+              this.state.openDialog?.name === "tableConfig" &&
+                this.state.openDialog.onConfirm(rows, columns);
+              this.setState({ openDialog: null });
+            }}
+            onClose={() => this.setState({ openDialog: null })}
+          />
+        )}
       </div>
     );
   }
@@ -7903,6 +7916,29 @@ class App extends React.Component<AppProps, AppState> {
       locked: false,
       frameId: topLayerFrame ? topLayerFrame.id : null,
     } as const;
+
+    // Special handling for table - show configuration dialog
+    if (elementType === "table") {
+      this.setState({
+        openDialog: {
+          name: "tableConfig",
+          onConfirm: (rows: number, columns: number) => {
+            const element = newTableElement({
+              type: "table",
+              rows,
+              columns,
+              ...baseElementAttributes,
+            });
+            this.scene.insertElement(element);
+            this.setState({
+              multiElement: null,
+              newElement: element as NonDeleted<ExcalidrawNonSelectionElement>,
+            });
+          },
+        },
+      });
+      return;
+    }
 
     let element;
     if (elementType === "embeddable") {
