@@ -557,11 +557,11 @@ export const newTableElement = (
   } & ElementConstructorOpts,
 ): NonDeleted<ExcalidrawTableElement> => {
   const { rows, cols, ...rest } = opts;
-  
+
   // Validate dimensions
   const validatedRows = Math.max(1, Math.min(rows, 50));
   const validatedCols = Math.max(1, Math.min(cols, 50));
-  
+
   // Initialize cell data
   const cellData: TableCellData[][] = [];
   for (let i = 0; i < validatedRows; i++) {
@@ -570,11 +570,11 @@ export const newTableElement = (
       cellData[i][j] = { text: "" };
     }
   }
-  
+
   // Initialize column widths and row heights
   const colWidths = new Array(validatedCols).fill(100);
   const rowHeights = new Array(validatedRows).fill(40);
-  
+
   return {
     ..._newElementBase<ExcalidrawTableElement>("table", rest),
     rows: validatedRows,

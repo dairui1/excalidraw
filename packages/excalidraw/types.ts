@@ -305,6 +305,18 @@ export interface AppState {
    * set when a new text is created or when an existing text is being edited
    */
   editingTextElement: NonDeletedExcalidrawElement | null;
+  /**
+   * set when a table cell is being edited
+   */
+  editingTableCell: {
+    elementId: string;
+    row: number;
+    col: number;
+  } | null;
+  /**
+   * set when table size dialog is shown
+   */
+  showTableSizeDialog: boolean;
   activeTool: {
     /**
      * indicates a previous tool we should revert back to if we deselect the

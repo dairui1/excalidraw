@@ -47,6 +47,8 @@ export const getDefaultAppState = (): Omit<
     activeEmbeddable: null,
     newElement: null,
     editingTextElement: null,
+    editingTableCell: null,
+    showTableSizeDialog: false,
     editingGroupId: null,
     activeTool: {
       type: "selection",
@@ -173,6 +175,8 @@ const APP_STATE_STORAGE_CONF = (<
   activeEmbeddable: { browser: false, export: false, server: false },
   newElement: { browser: false, export: false, server: false },
   editingTextElement: { browser: false, export: false, server: false },
+  editingTableCell: { browser: false, export: false, server: false },
+  showTableSizeDialog: { browser: false, export: false, server: false },
   editingGroupId: { browser: true, export: false, server: false },
   activeTool: { browser: true, export: false, server: false },
   penMode: { browser: true, export: false, server: false },

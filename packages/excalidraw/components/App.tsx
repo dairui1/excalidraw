@@ -260,6 +260,7 @@ import type {
   MagicGenerationData,
   ExcalidrawArrowElement,
   ExcalidrawElbowArrowElement,
+  ExcalidrawTableElement,
 } from "@excalidraw/element/types";
 
 import type { Mutable, ValueOf } from "@excalidraw/common/utility-types";
@@ -386,6 +387,8 @@ import { ElementCanvasButtons } from "../components/ElementCanvasButtons";
 import { LaserTrails } from "../laser-trails";
 import { withBatchedUpdates, withBatchedUpdatesThrottled } from "../reactUtils";
 import { textWysiwyg } from "../wysiwyg/textWysiwyg";
+import { TableCellEditor } from "../components/TableEditor";
+import { TableSizeDialog } from "../components/TableSizeDialog";
 import { isOverScrollBars } from "../scene/scrollbars";
 
 import { isMaybeMermaidDefinition } from "../mermaid";
@@ -393,6 +396,8 @@ import { isMaybeMermaidDefinition } from "../mermaid";
 import { LassoTrail } from "../lasso";
 
 import { EraserTrail } from "../eraser";
+
+import "../components/TableSizeDialog.scss";
 
 import ConvertElementTypePopup, {
   getConversionTypeFromElements,
@@ -1828,6 +1833,62 @@ class App extends React.Component<AppProps, AppState> {
                         )}
                         {showShapeSwitchPanel && (
                           <ConvertElementTypePopup app={this} />
+                        )}
+                        {this.state.editingTableCell && (
+                          <TableCellEditor
+                            tableElement={
+                              this.scene.getElement(
+                                this.state.editingTableCell.elementId,
+                              ) as ExcalidrawTableElement
+                            }
+                            cellRow={this.state.editingTableCell.row}
+                            cellCol={this.state.editingTableCell.col}
+                            app={this}
+                            appState={this.state}
+                            onClose={() =>
+                              this.setState({ editingTableCell: null })
+                            }
+                          />
+                        )}
+                        {this.state.showTableSizeDialog && (
+                          <TableSizeDialog
+                            onConfirm={(rows, cols) => {
+                              const { x, y } = viewportCoordsToSceneCoords(
+                                this.lastPointerDownEvent!,
+                                this.state,
+                              );
+                              const element = newTableElement({
+                                rows,
+                                cols,
+                                x,
+                                y,
+                                strokeColor: this.state.currentItemStrokeColor,
+                                backgroundColor:
+                                  this.state.currentItemBackgroundColor,
+                                fillStyle: this.state.currentItemFillStyle,
+                                strokeWidth: this.state.currentItemStrokeWidth,
+                                strokeStyle: this.state.currentItemStrokeStyle,
+                                roughness: this.state.currentItemRoughness,
+                                opacity: this.state.currentItemOpacity,
+                                width: cols * 100,
+                                height: rows * 40,
+                                roundness:
+                                  this.getCurrentItemRoundness("table"),
+                              });
+
+                              this.scene.insertElement(element);
+                              this.setState({
+                                showTableSizeDialog: false,
+                                selectedElementIds: makeNextSelectedElementIds(
+                                  { [element.id]: true },
+                                  this.state,
+                                ),
+                              });
+                            }}
+                            onCancel={() =>
+                              this.setState({ showTableSizeDialog: false })
+                            }
+                          />
                         )}
                       </ExcalidrawActionManagerContext.Provider>
                       {this.renderEmbeddables()}
@@ -5024,6 +5085,51 @@ class App extends React.Component<AppProps, AppState> {
     return null;
   }
 
+  private getTableCellAtPosition(
+    x: number,
+    y: number,
+  ): {
+    element: NonDeleted<ExcalidrawTableElement>;
+    row: number;
+    col: number;
+  } | null {
+    const element = this.getElementAtPosition(x, y);
+    if (element && element.type === "table" && !element.isDeleted) {
+      const tableElement = element as ExcalidrawTableElement;
+
+      // Calculate cell coordinates
+      let currentX = tableElement.x;
+      let currentY = tableElement.y;
+
+      for (let row = 0; row < tableElement.rows; row++) {
+        const rowHeight =
+          tableElement.rowHeights[row] ||
+          tableElement.height / tableElement.rows;
+
+        for (let col = 0; col < tableElement.cols; col++) {
+          const colWidth =
+            tableElement.colWidths[col] ||
+            tableElement.width / tableElement.cols;
+
+          if (
+            x >= currentX &&
+            x < currentX + colWidth &&
+            y >= currentY &&
+            y < currentY + rowHeight
+          ) {
+            return { element: tableElement, row, col };
+          }
+
+          currentX += colWidth;
+        }
+
+        currentX = tableElement.x;
+        currentY += rowHeight;
+      }
+    }
+    return null;
+  }
+
   // NOTE: Hot path for hit testing, so avoid unnecessary computations
   private getElementAtPosition(
     x: number,
@@ -5554,6 +5660,19 @@ class App extends React.Component<AppProps, AppState> {
       if (isIframeLikeElement(hitElement)) {
         this.setState({
           activeEmbeddable: { element: hitElement, state: "active" },
+        });
+        return;
+      }
+
+      // Handle table cell double click
+      const tableCell = this.getTableCellAtPosition(sceneX, sceneY);
+      if (tableCell) {
+        this.setState({
+          editingTableCell: {
+            elementId: tableCell.element.id,
+            row: tableCell.row,
+            col: tableCell.col,
+          },
         });
         return;
       }
@@ -7912,11 +8031,9 @@ class App extends React.Component<AppProps, AppState> {
         ...baseElementAttributes,
       });
     } else if (elementType === "table") {
-      element = newTableElement({
-        rows: 3,
-        cols: 3,
-        ...baseElementAttributes,
-      });
+      // Show table size dialog
+      this.setState({ showTableSizeDialog: true });
+      return;
     } else {
       element = newElement({
         type: elementType,

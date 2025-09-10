@@ -325,6 +325,15 @@
     "iframe": "IFrame",
     "table": "Table"
   },
+  "tableTool": {
+    "title": "Insert Table",
+    "rows": "Rows",
+    "columns": "Columns",
+    "quickSelect": "Quick Select",
+    "preview": "Preview",
+    "tooLargePreview": "Preview limited to 8x8 for performance",
+    "create": "Create"
+  },
   "headings": {
     "canvasActions": "Canvas actions",
     "selectedShapeActions": "Selected shape actions",
