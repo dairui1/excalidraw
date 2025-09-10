@@ -165,9 +165,9 @@ export const newElement = (
     return newTableElement({
       ...opts,
       type: "table",
-    }) as NonDeleted<ExcalidrawGenericElement>;
+    });
   }
-  return _newElementBase<ExcalidrawGenericElement>(opts.type, opts);
+  return _newElementBase(opts.type, opts) as NonDeleted<ExcalidrawGenericElement>;
 };
 
 export const newEmbeddableElement = (

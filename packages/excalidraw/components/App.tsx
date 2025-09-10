@@ -7860,7 +7860,8 @@ class App extends React.Component<AppProps, AppState> {
       | "diamond"
       | "ellipse"
       | "iframe"
-      | "embeddable",
+      | "embeddable"
+      | "table",
   ) {
     return this.state.currentItemRoundness === "round"
       ? {
